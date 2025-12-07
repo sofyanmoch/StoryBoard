@@ -11,6 +11,7 @@ import { useIPStore } from '@/store/useIPStore'
 import { formatPrice, formatDate, getIPPortalUrl, shortenAddress } from '@/lib/utils'
 import { toast } from 'sonner'
 import { LICENSE_TYPES } from '@/lib/constants'
+import { IPImage } from '../IPImage'
 
 export function IPDetailModal() {
   const { isIPDetailModalOpen, selectedIP, closeIPDetailModal, openLicenseModal } = useUIStore()
@@ -61,8 +62,8 @@ export function IPDetailModal() {
         {/* Preview */}
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-dark">
           {selectedIP.type === 'image' && (
-            <Image
-              src={selectedIP.preview.url}
+            <IPImage
+              src={selectedIP.preview.thumbnailUrl.cachedUrl}
               alt={selectedIP.title}
               fill
               className="object-cover"

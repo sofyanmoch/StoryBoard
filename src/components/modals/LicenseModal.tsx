@@ -8,7 +8,7 @@ import { Check, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import { useUIStore } from '@/store/useUIStore'
 import { useLicenseStore } from '@/store/useLicenseStore'
-import { useLicenseIP, getLicenseTermsId } from '@/hooks/useStoryProtocol'
+import { useLicenseIP, getLicenseTermsId, useAttachLicenseTerms } from '@/hooks/useStoryProtocol'
 import { useAccount } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
 import { formatPrice, getExplorerUrl } from '@/lib/utils'
@@ -21,6 +21,7 @@ export function LicenseModal() {
   const { addLicense } = useLicenseStore()
   const { isConnected } = useAccount()
   const { license: licenseIP } = useLicenseIP()
+  const { attachTerms: attachTermsIP } = useAttachLicenseTerms()
 
   const [isLicensing, setIsLicensing] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
@@ -34,6 +35,56 @@ export function LicenseModal() {
 
   const selectedLicense = licensingIP.licenses.find((l) => l.type === selectedLicenseType)
   const licenseInfo = LICENSE_TYPES.find((t) => t.value === selectedLicenseType)
+
+  // const handleConfirm = async () => {
+  //   if (!selectedLicense || !selectedLicenseType) {
+  //     toast.error('Please select a license type')
+  //     return
+  //   }
+
+  //   setIsLicensing(true)
+
+  //   try {
+  //     // Validate IP ID
+  //     if (!licensingIP.ipId) {
+  //       throw new Error('IP ID is required to license this asset')
+  //     }
+
+  //     // Get the license terms ID for this license type
+  //     const licenseTermsId = getLicenseTermsId(selectedLicenseType)
+
+  //     console.log(licenseTermsId, 'licenseTermsId')
+
+  //     // Call Story Protocol SDK to license the IP
+  //     const result = await licenseIP(
+  //       licensingIP.ipId as any,
+  //       licenseTermsId,
+  //       1 // amount
+  //     )
+
+  //     setTxHash(result.txHash)
+
+  //     // Save license to store
+  //     addLicense({
+  //       id: result.licenseId,
+  //       ipAssetId: licensingIP.id,
+  //       ipAsset: licensingIP,
+  //       licenseType: selectedLicenseType,
+  //       price: selectedLicense.price,
+  //       txHash: result.txHash,
+  //       licensedAt: new Date().toISOString(),
+  //     })
+
+  //     setSuccess(true)
+  //     toast.success('License acquired successfully!')
+  //   } catch (error: any) {
+  //     toast.error('Failed to acquire license', {
+  //       description: error.message || 'Please try again'
+  //     })
+  //   } finally {
+  //     setIsLicensing(false)
+  //   }
+  // }
 
   const handleConfirm = async () => {
     if (!selectedLicense || !selectedLicenseType) {
@@ -52,7 +103,36 @@ export function LicenseModal() {
       // Get the license terms ID for this license type
       const licenseTermsId = getLicenseTermsId(selectedLicenseType)
 
-      // Call Story Protocol SDK to license the IP
+      console.log(licenseTermsId, 'licenseTermsId')
+
+      // Step 1: Try to attach license terms (skip if already attached)
+      try {
+        toast.info('Checking license terms...')
+        
+        const attachResult = await attachTermsIP(
+          licensingIP.ipId as `0x${string}`,
+          licenseTermsId
+        )
+
+        if (attachResult.txHash) {
+          console.log('License terms attached:', attachResult.txHash)
+          toast.success('License terms attached successfully!')
+        } else {
+          toast.info('License terms already attached')
+        }
+      } catch (attachError: any) {
+        // If attach fails with 0xb3e96921, it means already attached
+        if (attachError.message?.includes('0xb3e96921')) {
+          console.log('License terms already attached, continuing...')
+          toast.info('License terms already attached')
+        } else {
+          throw attachError
+        }
+      }
+
+      // Step 2: Mint the license tokens
+      toast.info('Minting license tokens...')
+      
       const result = await licenseIP(
         licensingIP.ipId as any,
         licenseTermsId,
@@ -75,6 +155,7 @@ export function LicenseModal() {
       setSuccess(true)
       toast.success('License acquired successfully!')
     } catch (error: any) {
+      console.error('Licensing error:', error)
       toast.error('Failed to acquire license', {
         description: error.message || 'Please try again'
       })
@@ -145,7 +226,7 @@ export function LicenseModal() {
               <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-dark flex-shrink-0">
                 {licensingIP.type === 'image' && (
                   <Image
-                    src={licensingIP.preview.thumbnailUrl || licensingIP.preview.url}
+                    src={licensingIP.preview.thumbnailUrl.cachedUrl || licensingIP.preview.url}
                     alt={licensingIP.title}
                     fill
                     className="object-cover"

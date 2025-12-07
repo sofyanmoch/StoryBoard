@@ -18,6 +18,8 @@ export default function LicensesPage() {
   const { licenses } = useLicenseStore()
   const { openIPDetailModal } = useUIStore()
 
+  console.log(licenses, 'licenses')
+
   const handleDownload = (license: any) => {
     // In production, this would download the actual licensed asset
     window.open(license.ipAsset.preview.url, '_blank')
@@ -52,7 +54,7 @@ export default function LicensesPage() {
                         >
                           {license.ipAsset.type === 'image' && (
                             <Image
-                              src={license.ipAsset.preview.thumbnailUrl || license.ipAsset.preview.url}
+                              src={license.ipAsset.preview.thumbnailUrl.thumbnailUrl || license.ipAsset.preview.url}
                               alt={license.ipAsset.title}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"

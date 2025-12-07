@@ -8,6 +8,7 @@ import { type IPAsset } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { SWIPE_THRESHOLD, SWIPE_ROTATION_MULTIPLIER, SPRING_CONFIG } from '@/lib/constants'
+import { IPImage } from '../IPImage'
 
 interface SwipeCardProps {
   ipAsset: IPAsset
@@ -50,6 +51,8 @@ export function SwipeCard({
   const minPrice = Math.min(...ipAsset.licenses.map((l) => Number(l.price)))
   const isFree = minPrice === 0
 
+  console.log(ipAsset, 'ipAsset in SwipeCard')
+
   return (
     <motion.div
       ref={cardRef}
@@ -73,12 +76,12 @@ export function SwipeCard({
         {/* Image/Preview */}
         <div className="absolute inset-0">
           {ipAsset.type === 'image' && (
-            <Image
-              src={ipAsset.preview.url}
+            <IPImage
+              src={ipAsset.preview.thumbnailUrl.cachedUrl}
               alt={ipAsset.title}
               fill
               className="object-cover"
-              priority
+              fallbackType='gradient'
             />
           )}
           {ipAsset.type === 'music' && (

@@ -115,7 +115,11 @@ function getSampleIPAssets(): IPAsset[] {
       },
       preview: {
         url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=1000&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop',
+        thumbnailUrl: {
+            cachedUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop',
+            contentType: 'image/jpeg',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop'
+        }
       },
       licenses: [
         { type: 'personal', price: '0', currency: 'IP', available: true },
@@ -142,7 +146,11 @@ function getSampleIPAssets(): IPAsset[] {
       },
       preview: {
         url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=500&fit=crop',
+        thumbnailUrl: {
+            cachedUrl: 'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?w=400&h=500&fit=crop',
+            contentType: 'image/jpeg',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?w=400&h=500&fit=crop'
+        }
       },
       licenses: [
         { type: 'personal', price: parseEther('0.01').toString(), currency: 'IP', available: true },
@@ -170,7 +178,11 @@ function getSampleIPAssets(): IPAsset[] {
       },
       preview: {
         url: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=800&h=1000&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=500&fit=crop',
+        thumbnailUrl: {
+            cachedUrl: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=500&fit=crop',
+            contentType: 'image/jpeg',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=500&fit=crop'
+        }
       },
       licenses: [
         { type: 'commercial', price: parseEther('0.15').toString(), currency: 'IP', available: true },

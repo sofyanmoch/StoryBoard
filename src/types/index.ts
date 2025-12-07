@@ -17,7 +17,7 @@ export interface IPAsset {
   }
   preview: {
     url: string
-    thumbnailUrl?: string
+    thumbnailUrl: ThumbnailUrl
   }
   licenses: {
     type: LicenseType
@@ -56,4 +56,10 @@ export interface FilterOptions {
   collection: Collection | 'all'
   license: 'free' | 'paid' | 'all'
   sort: 'newest' | 'popular' | 'price-low' | 'price-high'
+}
+
+export interface ThumbnailUrl {
+  cachedUrl: string;
+  contentType: string;
+  thumbnailUrl: string;
 }

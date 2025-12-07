@@ -16,11 +16,14 @@ import { useUIStore } from '@/store/useUIStore'
 import { useLicenseStore } from '@/store/useLicenseStore'
 import { formatPrice } from '@/lib/utils'
 import { toast } from 'sonner'
+import { IPImage } from '@/components/IPImage'
 
 export default function LikesPage() {
   const { likedIPs, unlikeIP } = useIPStore()
   const { openIPDetailModal, openLicenseModal } = useUIStore()
   const { hasLicense } = useLicenseStore()
+
+  console.log(likedIPs, 'likedIPs')
 
   const handleUnlike = (ipId: string, title: string) => {
     unlikeIP(ipId)
@@ -63,8 +66,8 @@ export default function LikesPage() {
                         onClick={() => openIPDetailModal(ip)}
                       >
                         {ip.type === 'image' && (
-                          <Image
-                            src={ip.preview.thumbnailUrl || ip.preview.url}
+                          <IPImage
+                            src={ip.preview.thumbnailUrl.cachedUrl || ip.preview.url}
                             alt={ip.title}
                             fill
                             className="object-cover transition-transform group-hover:scale-105"

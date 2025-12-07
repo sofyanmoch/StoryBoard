@@ -15,7 +15,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -58,7 +62,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -95,7 +103,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -138,7 +150,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -175,7 +191,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -218,7 +238,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1533450718592-29d45635f0a9?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1533450718592-29d45635f0a9?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1533450718592-29d45635f0a9?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1533450718592-29d45635f0a9?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -261,7 +285,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -298,7 +326,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -341,7 +373,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1571974599782-87624638275e?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -378,7 +414,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1568642891147-bd1c9c5cf745?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1568642891147-bd1c9c5cf745?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1568642891147-bd1c9c5cf745?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1568642891147-bd1c9c5cf745?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -421,7 +461,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -458,7 +502,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1506755855567-92ff770e8d00?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1506755855567-92ff770e8d00?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1506755855567-92ff770e8d00?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1506755855567-92ff770e8d00?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -501,7 +549,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -544,7 +596,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1490718687940-0ecadf414600?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1490718687940-0ecadf414600?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1490718687940-0ecadf414600?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1490718687940-0ecadf414600?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
@@ -587,7 +643,11 @@ export const mockIPAssets: IPAsset[] = [
     },
     preview: {
       url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=1000&fit=crop',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=500&fit=crop'
+      thumbnailUrl: {
+        cachedUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=500&fit=crop',
+        contentType: 'image/jpeg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=500&fit=crop'
+      }
     },
     licenses: [
       {
