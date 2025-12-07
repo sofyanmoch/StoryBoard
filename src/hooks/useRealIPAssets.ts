@@ -199,10 +199,11 @@ function getSampleIPAssets(): IPAsset[] {
   ]
 }
 
-// Fetch IP assets from Story Protocol
-async function fetchIPAssetsFromStory(): Promise<IPAsset[]> {
+// Fetch IP assets from Story Protocol with pagination
+async function fetchIPAssetsFromStory(page: number = 0, limit: number = 50): Promise<IPAsset[]> {
   try {
-    console.log('Fetching IP assets from Story Protocol API...')
+    const offset = page * limit
+    console.log(`Fetching IP assets from Story Protocol API (page ${page}, offset ${offset})...`)
 
     // Call Story Protocol API with POST method
     const response = await fetch(`${STORY_API_URL}/assets`, {
@@ -218,8 +219,8 @@ async function fetchIPAssetsFromStory(): Promise<IPAsset[]> {
         orderBy: 'blockNumber',
         orderDirection: 'desc',
         pagination: {
-          limit: 50,
-          offset: 0,
+          limit: limit,
+          offset: offset,
         },
         // where field is optional - omit to get all assets
         // where: {
@@ -232,8 +233,15 @@ async function fetchIPAssetsFromStory(): Promise<IPAsset[]> {
 
     if (!response.ok) {
       console.warn(`Story Protocol API error: ${response.status} ${response.statusText}`)
-      console.log('Using sample data as fallback')
-      return getSampleIPAssets()
+
+      // Only use sample data for the first page
+      if (page === 0) {
+        console.log('Using sample data as fallback for page 0')
+        return getSampleIPAssets()
+      }
+
+      console.log('No more assets available')
+      return []
     }
 
     const data = await response.json()
@@ -243,24 +251,36 @@ async function fetchIPAssetsFromStory(): Promise<IPAsset[]> {
     const assets = data.data || data.assets || data.items || []
 
     if (Array.isArray(assets) && assets.length > 0) {
-      console.log(`✅ Fetched ${assets.length} IP assets from Story Protocol`)
+      console.log(`✅ Fetched ${assets.length} IP assets from Story Protocol (page ${page})`)
       return assets.map(transformStoryIPToAsset)
     }
 
-    console.warn('No IP assets found in response, using sample data')
-    return getSampleIPAssets()
+    console.warn(`No IP assets found in response for page ${page}`)
+
+    // Only use sample data for the first page
+    if (page === 0) {
+      return getSampleIPAssets()
+    }
+
+    return []
   } catch (error) {
     console.error('Error fetching IP assets from Story Protocol:', error)
-    console.log('Falling back to sample Story Protocol data')
-    return getSampleIPAssets()
+
+    // Only use sample data for the first page
+    if (page === 0) {
+      console.log('Falling back to sample Story Protocol data')
+      return getSampleIPAssets()
+    }
+
+    return []
   }
 }
 
-// Hook to fetch real IP assets
-export function useRealIPAssets() {
+// Hook to fetch real IP assets with pagination
+export function useRealIPAssets(page: number = 0) {
   return useQuery({
-    queryKey: ['ipAssets', 'story-protocol'],
-    queryFn: fetchIPAssetsFromStory,
+    queryKey: ['ipAssets', 'story-protocol', page],
+    queryFn: () => fetchIPAssetsFromStory(page),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: 1,

@@ -1,4 +1,4 @@
-import { useAccount, useWalletClient } from 'wagmi'
+import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
 import { useMemo } from 'react'
 import { StoryClient, StoryConfig } from '@story-protocol/core-sdk'
 import { Address, http, createPublicClient } from 'viem'
@@ -6,20 +6,24 @@ import { storyAeneidTestnet } from '@/lib/wagmi'
 
 // Hook for Story Protocol client
 export function useStoryProtocol() {
-  const { address, isConnected } = useAccount()
-  const { data: walletClient } = useWalletClient()
+  const { address, isConnected, chain } = useAccount()
+  const { data: walletClient } = useWalletClient({ chainId: storyAeneidTestnet.id })
+  const { switchChainAsync } = useSwitchChain()
 
   const client = useMemo(() => {
     if (!walletClient || !isConnected || !address) return null
 
     try {
-      // Create public client for Story Aeneid
-      const publicClient = createPublicClient({
-        chain: storyAeneidTestnet,
-        transport: http('https://aeneid.storyrpc.io'),
-      })
+      // Ensure wallet client has an account
+      if (!walletClient.account) {
+        console.error('Wallet client has no account attached')
+        return null
+      }
 
-      // Initialize Story Protocol client
+      console.log('Initializing Story Protocol client')
+      console.log('- Account:', walletClient.account.address)
+
+      // Initialize Story Protocol client with proper account configuration
       const storyClient = StoryClient.newClient({
         account: walletClient.account,
         transport: http('https://aeneid.storyrpc.io'),
@@ -36,7 +40,10 @@ export function useStoryProtocol() {
   return {
     client,
     isConnected,
-    address
+    address,
+    walletClient,
+    chain,
+    switchChain: switchChainAsync
   }
 }
 
@@ -94,7 +101,7 @@ export function useStoryProtocol() {
 // }
 
 export function useLicenseIP() {
-  const { client, isConnected, address } = useStoryProtocol()
+  const { client, isConnected, address, walletClient, chain, switchChain } = useStoryProtocol()
 
   const license = async (
     ipId: Address,
@@ -102,7 +109,15 @@ export function useLicenseIP() {
     amount: number = 1
   ): Promise<{ txHash: string; licenseId: string }> => {
     if (!client || !isConnected || !address) {
-      throw new Error('Wallet not connected')
+      throw new Error('Wallet not connected. Please connect your wallet first.')
+    }
+
+    if (!walletClient) {
+      throw new Error('Wallet client not available. Please reconnect your wallet.')
+    }
+
+    if (!walletClient.account) {
+      throw new Error('Wallet account not found. Please reconnect your wallet.')
     }
 
     try {
@@ -111,29 +126,60 @@ export function useLicenseIP() {
       console.log('License Terms ID:', licenseTermsId)
       console.log('Amount:', amount)
       console.log('Receiver:', address)
+      console.log('Wallet Account:', walletClient.account.address)
+      console.log('Current Chain:', chain?.id)
+      console.log('Required Chain:', storyAeneidTestnet.id)
+
+      // Ensure we're on the correct chain
+      if (chain?.id !== storyAeneidTestnet.id) {
+        console.log('Wrong chain detected, switching to Story Aeneid Testnet...')
+        if (switchChain) {
+          try {
+            await switchChain({ chainId: storyAeneidTestnet.id })
+            console.log('✅ Successfully switched to Story Aeneid Testnet')
+            // Wait a moment for the chain switch to complete
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          } catch (switchError: any) {
+            throw new Error(`Please switch to Story Aeneid Testnet (Chain ID: ${storyAeneidTestnet.id}) in your wallet.`)
+          }
+        } else {
+          throw new Error(`Please switch to Story Aeneid Testnet (Chain ID: ${storyAeneidTestnet.id}) in your wallet.`)
+        }
+      }
+
+      // Validate IP ID format
+      if (!ipId || !ipId.startsWith('0x') || ipId.length !== 42) {
+        throw new Error(`Invalid IP ID format: ${ipId}. Must be a valid Ethereum address.`)
+      }
+
+      // Validate license terms ID
+      const termsId = BigInt(licenseTermsId)
+      if (termsId < BigInt(1)) {
+        throw new Error(`Invalid license terms ID: ${licenseTermsId}`)
+      }
 
       // Step 1: Try to attach license terms first
       let attachSuccess = false
       try {
         console.log('Attempting to attach license terms...')
-        
+
         const attachResponse = await client.license.attachLicenseTerms({
           ipId: ipId as Address,
-          licenseTermsId: BigInt(licenseTermsId),
+          licenseTermsId: termsId,
         })
-        
+
         console.log('✅ License terms attached successfully')
         console.log('Attach TX Hash:', attachResponse.txHash)
         attachSuccess = true
-        
+
         // Wait for blockchain confirmation
         if (attachResponse.txHash) {
-          await new Promise(resolve => setTimeout(resolve, 5000))
+          await new Promise(resolve => setTimeout(resolve, 3000))
         }
-        
+
       } catch (attachError: any) {
         console.log('Attach error:', attachError.message)
-        
+
         // Check if already attached (this is OK)
         const errorMsg = attachError.message?.toLowerCase() || ''
         if (
@@ -156,11 +202,13 @@ export function useLicenseIP() {
 
       // Step 2: Mint license tokens
       console.log('Attempting to mint license tokens...')
-      
+
+      // console.log("=== MINT PARAMETERS ===", ipId, termsId, amount, address)
+
       const mintResponse = await client.license.mintLicenseTokens({
         licensorIpId: ipId as Address,
-        licenseTermsId: BigInt(licenseTermsId),
-        amount: BigInt(amount),
+        licenseTermsId: "1" as any, // Use default license template
+        amount: 1,
         receiver: address as Address,
       })
 
@@ -172,34 +220,35 @@ export function useLicenseIP() {
         throw new Error('No transaction hash returned from mint')
       }
 
-      // Wait for transaction confirmation
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
       return {
         txHash: mintResponse.txHash,
         licenseId: mintResponse.licenseTokenIds?.[0]?.toString() || `license-${Date.now()}`
       }
-      
+
     } catch (error: any) {
       console.error('=== LICENSE PROCESS FAILED ===')
       console.error('Error:', error)
       console.error('Error message:', error.message)
       console.error('Error details:', error.cause || error.details)
-      
+
       // Provide more specific error messages
       if (error.message?.includes('not attached')) {
         throw new Error('License terms are not attached to this IP. Please try again.')
       }
-      
-      if (error.message?.includes('invalid parameters')) {
-        throw new Error('Invalid minting parameters. Please verify the IP ID and license terms.')
+
+      if (error.message?.includes('invalid') || error.message?.includes('Invalid')) {
+        throw new Error('Missing or invalid parameters.\nDouble check you have provided the correct parameters.')
       }
-      
+
       if (error.message?.includes('insufficient')) {
         throw new Error('Insufficient balance to mint license. Please check your wallet.')
       }
-      
-      throw new Error(error.message || 'Failed to mint license tokens')
+
+      if (error.message?.includes('user rejected') || error.message?.includes('User rejected')) {
+        throw new Error('Transaction rejected by user.')
+      }
+
+      throw new Error(error.message || 'Failed to mint license tokens: Missing or invalid parameters.\nDouble check you have provided the correct parameters.')
     }
   }
 
@@ -359,7 +408,7 @@ export function useAttachLicenseTerms() {
 export function useFetchIPAssets() {
   const { client, isConnected } = useStoryProtocol()
 
-  const fetchIPAssets = async (options?: {
+  const fetchIPAssets = async (_options?: {
     limit?: number
     offset?: number
   }): Promise<any[]> => {
