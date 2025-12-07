@@ -1,11 +1,11 @@
 import { type Collection, type IPAssetType, type LicenseType } from '@/types'
 
-export const STORY_ODYSSEY_CHAIN_ID = 1516
+export const STORY_AENEID_CHAIN_ID = 1315
 
 export const STORY_CHAIN_CONFIG = {
-  id: STORY_ODYSSEY_CHAIN_ID,
-  name: 'Story Odyssey Testnet',
-  network: 'story-odyssey',
+  id: STORY_AENEID_CHAIN_ID,
+  name: 'Story Aeneid Testnet',
+  network: 'story-aeneid',
   nativeCurrency: {
     decimals: 18,
     name: 'IP',
@@ -13,22 +13,24 @@ export const STORY_CHAIN_CONFIG = {
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_STORY_RPC_URL || 'https://odyssey.storyrpc.io'],
+      http: ['https://aeneid.storyrpc.io'],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_STORY_RPC_URL || 'https://odyssey.storyrpc.io'],
+      http: ['https://aeneid.storyrpc.io'],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Story Odyssey Explorer',
-      url: process.env.NEXT_PUBLIC_STORY_EXPLORER_URL || 'https://odyssey.storyscan.xyz',
+      name: 'Story Aeneid Explorer',
+      url: 'https://aeneid.storyscan.xyz',
     },
   },
   testnet: true,
 }
 
-export const STORY_PORTAL_URL = process.env.NEXT_PUBLIC_STORY_PORTAL_URL || 'https://odyssey.portal.story.foundation'
+export const STORY_PORTAL_URL = 'https://aeneid.explorer.story.foundation'
+export const STORY_RPC_URL = 'https://aeneid.storyrpc.io'
+export const STORY_EXPLORER_URL = 'https://aeneid.storyscan.xyz'
 
 export const IP_ASSET_TYPES: { value: IPAssetType | 'all'; label: string }[] = [
   { value: 'all', label: 'All Types' },

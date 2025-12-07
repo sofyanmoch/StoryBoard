@@ -1,14 +1,8 @@
 import { useAccount, useWalletClient } from 'wagmi'
 import { useMemo } from 'react'
 import { StoryClient, StoryConfig } from '@story-protocol/core-sdk'
-import { Address, Hex, http } from 'viem'
-
-// Story Protocol configuration for Odyssey Testnet
-const STORY_CONFIG: StoryConfig = {
-  account: '0x' as Address, // Will be overridden by wallet
-  transport: http(process.env.NEXT_PUBLIC_STORY_RPC_URL || 'https://odyssey.storyrpc.io'),
-  chainId: 'odyssey' as any, // Story Odyssey testnet
-}
+import { Address, http, createPublicClient } from 'viem'
+import { storyAeneidTestnet } from '@/lib/wagmi'
 
 // Hook for Story Protocol client
 export function useStoryProtocol() {
@@ -19,11 +13,17 @@ export function useStoryProtocol() {
     if (!walletClient || !isConnected || !address) return null
 
     try {
-      // Initialize Story Protocol client with wallet
+      // Create public client for Story Aeneid
+      const publicClient = createPublicClient({
+        chain: storyAeneidTestnet,
+        transport: http('https://aeneid.storyrpc.io'),
+      })
+
+      // Initialize Story Protocol client
       const storyClient = StoryClient.newClient({
-        ...STORY_CONFIG,
         account: walletClient.account,
-        wallet: walletClient as any,
+        transport: http('https://aeneid.storyrpc.io'),
+        chainId: 'aeneid' as any,
       })
 
       return storyClient
@@ -54,16 +54,21 @@ export function useLicenseIP() {
     }
 
     try {
-      console.log('Minting license for IP:', ipId)
+      console.log('Minting license for IP:', ipId, 'with terms:', licenseTermsId)
 
-      // Attach license terms to IP if not already attached
-      // This is required before minting license tokens
-      const attachResponse = await client.license.attachLicenseTerms({
-        ipId: ipId,
-        licenseTermsId: BigInt(licenseTermsId),
-      })
-
-      console.log('License terms attached:', attachResponse.txHash)
+      // Try to attach license terms first (may already be attached)
+      try {
+        const attachResponse = await client.license.attachLicenseTerms({
+          ipId: ipId,
+          licenseTermsId: BigInt(licenseTermsId),
+        })
+        console.log('License terms attached:', attachResponse.txHash)
+      } catch (attachError: any) {
+        // If already attached, continue
+        if (!attachError.message?.includes('already attached')) {
+          console.warn('Failed to attach license terms:', attachError.message)
+        }
+      }
 
       // Mint license tokens
       const mintResponse = await client.license.mintLicenseTokens({
@@ -81,27 +86,6 @@ export function useLicenseIP() {
       }
     } catch (error: any) {
       console.error('Error minting license:', error)
-
-      // Handle specific errors
-      if (error.message?.includes('already attached')) {
-        // License terms already attached, try minting directly
-        try {
-          const mintResponse = await client.license.mintLicenseTokens({
-            licenseTermsId: BigInt(licenseTermsId),
-            licensorIpId: ipId,
-            receiver: address,
-            amount: amount,
-          })
-
-          return {
-            txHash: mintResponse.txHash || '',
-            licenseId: mintResponse.licenseTokenIds?.[0]?.toString() || `license-${Date.now()}`
-          }
-        } catch (mintError: any) {
-          throw new Error(mintError.message || 'Failed to mint license')
-        }
-      }
-
       throw new Error(error.message || 'Failed to mint license')
     }
   }
@@ -118,8 +102,8 @@ export function useRegisterIP() {
     tokenId: string | bigint,
     metadata?: {
       metadataURI?: string
-      metadataHash?: string
-      nftMetadataHash?: string
+      metadataHash?: Address
+      nftMetadataHash?: Address
     }
   ): Promise<{ ipId: string; txHash: string }> => {
     if (!client || !isConnected || !address) {
@@ -201,88 +185,41 @@ export function useAttachLicenseTerms() {
   return { attachTerms, isConnected }
 }
 
-// Hook for creating PIL (Programmable IP License) terms
-export function useRegisterPILTerms() {
+// Hook for fetching IP assets from Story Protocol
+export function useFetchIPAssets() {
   const { client, isConnected } = useStoryProtocol()
 
-  const registerTerms = async (params: {
-    transferable: boolean
-    royaltyPolicy?: Address
-    defaultMintingFee?: bigint
-    commercialUse?: boolean
-    commercialAttribution?: boolean
-    commercializerChecker?: Address
-    commercializerCheckerData?: Address
-    commercialRevShare?: number
-    derivativesAllowed?: boolean
-    derivativesAttribution?: boolean
-    derivativesApproval?: boolean
-    derivativesReciprocal?: boolean
-    territories?: string[]
-    distributionChannels?: string[]
-    contentRestrictions?: string[]
-  }): Promise<{ licenseTermsId: string; txHash: string }> => {
-    if (!client || !isConnected) {
-      throw new Error('Wallet not connected')
+  const fetchIPAssets = async (options?: {
+    limit?: number
+    offset?: number
+  }): Promise<any[]> => {
+    if (!client) {
+      console.warn('Story Protocol client not initialized')
+      return []
     }
 
     try {
-      console.log('Registering PIL terms:', params)
+      console.log('Fetching IP assets from Story Protocol...')
 
-      // const response = await client.license.registerPILTerms({
-      //   transferable: params.transferable,
-      //   royaltyPolicy: params.royaltyPolicy || '0x0000000000000000000000000000000000000000' as Address,
-      //   defaultMintingFee: params.defaultMintingFee || BigInt(0),
-      //   commercialUse: params.commercialUse || false,
-      //   commercialAttribution: params.commercialAttribution || false,
-      //   commercializerChecker: params.commercializerChecker || '0x0000000000000000000000000000000000000000' as Address,
-      //   commercializerCheckerData: params.commercializerCheckerData || '0x' as Address,
-      //   commercialRevShare: params.commercialRevShare || 0,
-      //   derivativesAllowed: params.derivativesAllowed || false,
-      //   derivativesAttribution: params.derivativesAttribution || false,
-      //   derivativesApproval: params.derivativesApproval || false,
-      //   derivativesReciprocal: params.derivativesReciprocal || false,
-      //   territories: params.territories || [],
-      //   distributionChannels: params.distributionChannels || [],
-      //   contentRestrictions: params.contentRestrictions || [],
-      // })
+      // Note: Story Protocol SDK may not have a direct "list all IPs" method
+      // You would typically fetch IPs you own or specific IPs by ID
+      // For now, return empty array as placeholder
 
-      const response = await client.license.registerPILTerms({
-        transferable: params.transferable,
-        royaltyPolicy: params.royaltyPolicy || '0x0000000000000000000000000000000000000000' as Address,
-        defaultMintingFee: params.defaultMintingFee || BigInt(0),
-        currency: (params as any).currency || '0x0000000000000000000000000000000000000000' as Address,
-        uri: (params as any).uri || '',
-        commercialUse: params.commercialUse || false,
-        commercialAttribution: params.commercialAttribution || false,
-        commercializerChecker: params.commercializerChecker || '0x0000000000000000000000000000000000000000' as Address,
-        commercializerCheckerData: params.commercializerCheckerData || '0x' as Hex,
-        commercialRevShare: params.commercialRevShare || 0,
-        commercialRevCeiling: (params as any).commercialRevCeiling || BigInt(0),
-        derivativesAllowed: params.derivativesAllowed || false,
-        derivativesAttribution: params.derivativesAttribution || false,
-        derivativesApproval: params.derivativesApproval || false,
-        derivativesReciprocal: params.derivativesReciprocal || false,
-        derivativeRevCeiling: (params as any).derivativeRevCeiling || BigInt(0),
-        expiration: (params as any).expiration || BigInt(0),
-      })
+      // Example of how you might fetch specific IPs:
+      // const ipAsset = await client.ipAsset.get(ipId)
 
-      console.log('PIL terms registered:', response)
-
-      return {
-        licenseTermsId: response.licenseTermsId?.toString() || '',
-        txHash: response.txHash || ''
-      }
+      return []
     } catch (error: any) {
-      console.error('Error registering PIL terms:', error)
-      throw new Error(error.message || 'Failed to register PIL terms')
+      console.error('Error fetching IP assets:', error)
+      return []
     }
   }
 
-  return { registerTerms, isConnected }
+  return { fetchIPAssets, isConnected }
 }
 
 // Helper: Get default PIL terms IDs for common license types
+// These are standard license term IDs on Story Protocol
 export const DEFAULT_LICENSE_TERMS = {
   // Non-commercial Social Remixing (free, derivatives allowed)
   NON_COMMERCIAL_REMIX: '1',
@@ -306,4 +243,10 @@ export function getLicenseTermsId(licenseType: 'personal' | 'commercial' | 'remi
     default:
       return DEFAULT_LICENSE_TERMS.NON_COMMERCIAL_REMIX
   }
+}
+
+// Helper: Format IP ID for display
+export function formatIPId(ipId: string): string {
+  if (!ipId || ipId.length < 10) return ipId
+  return `${ipId.slice(0, 6)}...${ipId.slice(-4)}`
 }

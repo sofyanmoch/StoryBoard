@@ -127,10 +127,10 @@ storyboard/
 
 This project is built on **Story Protocol Odyssey Testnet**:
 
-- **Chain ID**: 1516
-- **RPC URL**: https://odyssey.storyrpc.io
-- **Explorer**: https://odyssey.storyscan.xyz
-- **Portal**: https://odyssey.portal.story.foundation
+- **Chain ID**: 1315
+- **RPC URL**: https://aeneid.storyrpc.io
+- **Explorer**: https://aeneid.storyscan.xyz
+- **Portal**: https://aeneid.explorer.story.foundation
 
 ### Licensing Flow
 
@@ -231,7 +231,7 @@ The current implementation uses mock transactions for demo purposes. To integrat
 
    const client = new StoryClient({
      wallet: walletClient,
-     chainId: 1516,
+     chainId: 1315,
    })
    ```
 

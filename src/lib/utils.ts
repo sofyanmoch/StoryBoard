@@ -29,12 +29,12 @@ export function formatDate(dateString: string): string {
 }
 
 export function getExplorerUrl(txHash: string): string {
-  const explorerUrl = process.env.NEXT_PUBLIC_STORY_EXPLORER_URL || 'https://odyssey.storyscan.xyz'
+  const explorerUrl = process.env.NEXT_PUBLIC_STORY_EXPLORER_URL || 'https://aeneid.storyscan.xyz'
   return `${explorerUrl}/tx/${txHash}`
 }
 
 export function getIPPortalUrl(ipId: string): string {
-  const portalUrl = process.env.NEXT_PUBLIC_STORY_PORTAL_URL || 'https://odyssey.portal.story.foundation'
+  const portalUrl = process.env.NEXT_PUBLIC_STORY_PORTAL_URL || 'https://aeneid.explorer.story.foundation'
   return `${portalUrl}/ip/${ipId}`
 }
 

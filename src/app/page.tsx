@@ -8,22 +8,30 @@ import { FilterModal } from '@/components/filters/FilterModal'
 import { SwipeStack } from '@/components/swipe/SwipeStack'
 import { IPDetailModal } from '@/components/modals/IPDetailModal'
 import { LicenseModal } from '@/components/modals/LicenseModal'
-import { mockIPAssets, filterIPAssets } from '@/data/mockIPAssets'
+import { filterIPAssets } from '@/data/mockIPAssets'
 import { useFilterStore } from '@/store/useFilterStore'
 import { useIPStore } from '@/store/useIPStore'
+import { useRealIPAssets } from '@/hooks/useRealIPAssets'
 import { IPCardSkeleton } from '@/components/ui/Skeleton'
 
 export default function HomePage() {
   const { filters } = useFilterStore()
   const { setCurrentStack } = useIPStore()
+  const { data: ipAssets = [], isLoading } = useRealIPAssets()
 
   const filteredAssets = useMemo(() => {
-    return filterIPAssets(mockIPAssets, filters)
-  }, [filters])
+    return filterIPAssets(ipAssets, filters)
+  }, [ipAssets, filters])
+
+ const filteredKey = useMemo(() => {
+  return filteredAssets.map(ip => ip.id).join(',')
+}, [filteredAssets])
 
   useEffect(() => {
-    setCurrentStack(filteredAssets)
-  }, [filteredAssets, setCurrentStack])
+    if (filteredAssets.length > 0) {
+      setCurrentStack(filteredAssets)
+    }
+  }, [filteredKey])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,7 +41,11 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="flex-1 relative pb-20">
         <div className="max-w-screen-xl mx-auto h-full px-4 py-8">
-          {filteredAssets.length > 0 ? (
+          {isLoading ? (
+            <div className="relative w-full h-[calc(100vh-280px)] min-h-[500px]">
+              <IPCardSkeleton />
+            </div>
+          ) : filteredAssets.length > 0 ? (
             <div className="relative w-full h-[calc(100vh-280px)] min-h-[500px]">
               <SwipeStack ipAssets={filteredAssets} />
             </div>
@@ -41,7 +53,9 @@ export default function HomePage() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-xl text-white mb-2">No IP assets found</p>
-                <p className="text-muted">Try adjusting your filters</p>
+                <p className="text-muted">
+                  {ipAssets.length === 0 ? 'Loading IP assets from Story Protocol...' : 'Try adjusting your filters'}
+                </p>
               </div>
             </div>
           )}
