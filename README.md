@@ -290,15 +290,7 @@ For questions or support:
 - Join [Story Protocol Discord](https://discord.gg/storyprotocol)
 - Read the [Story Protocol Docs](https://docs.story.foundation)
 
-## Roadmap
-
-- [ ] Real Story Protocol SDK integration
-- [ ] User profiles and creator pages
-- [ ] Advanced search and discovery
-- [ ] Social features (comments, shares)
-- [ ] Revenue tracking dashboard
-- [ ] Mobile app (React Native)
 
 ---
 
-Built with ❤️ for Story Protocol Hackathon
+Built with ❤️ on Story Protocol
