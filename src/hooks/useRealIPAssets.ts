@@ -48,8 +48,8 @@ const CURRENCY_MAP: Record<string, string> = {
 }
 
 // Story Protocol API configuration
-const STORY_API_URL = process.env.NEXT_PUBLIC_STORY_API_URL || 'https://staging-api.storyprotocol.net/api/v4'
-const STORY_API_KEY = process.env.NEXT_PUBLIC_STORY_API_KEY || 'KOTbaGUSWQ6cUJWhiJYiOjPgB0kTRu1eCFFvQL0IWls'
+const STORY_API_URL = 'https://staging-api.storyprotocol.net/api/v4'
+const STORY_API_KEY = 'KOTbaGUSWQ6cUJWhiJYiOjPgB0kTRu1eCFFvQL0IWls'
 
 // Transform Story Protocol IP data to our IPAsset format
 function transformStoryIPToAsset(storyIP: any): IPAsset {
