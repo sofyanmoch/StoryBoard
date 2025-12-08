@@ -35,7 +35,7 @@ export function getExplorerUrl(txHash: string): string {
 
 export function getIPPortalUrl(ipId: string): string {
   const portalUrl = process.env.NEXT_PUBLIC_STORY_PORTAL_URL || 'https://aeneid.explorer.story.foundation'
-  return `${portalUrl}/ip/${ipId}`
+  return `${portalUrl}/ipa/${ipId}`
 }
 
 export function parseError(error: unknown): string {

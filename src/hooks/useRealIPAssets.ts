@@ -53,13 +53,14 @@ const STORY_API_KEY = 'KOTbaGUSWQ6cUJWhiJYiOjPgB0kTRu1eCFFvQL0IWls'
 
 // Transform Story Protocol IP data to our IPAsset format
 function transformStoryIPToAsset(storyIP: any): IPAsset {
+  console.log(storyIP, 'storyIP in transform')
   // Handle Story Protocol API response structure
   const ipId = storyIP.ipId || storyIP.id || storyIP.assetId || ''
   const metadata = storyIP.nftMetadata || storyIP.metadata || {}
   const ipMetadata = storyIP.ipMetadata || {}
 
   // Extract owner/creator
-  const owner = storyIP.owner || storyIP.ipOwner || storyIP.creator || '0x0000000000000000000000000000000000000000'
+  const owner = storyIP.ownerAddress || '0x0000000000000000000000000000000000000000'
 
   // Extract metadata fields
   const name = metadata.name || ipMetadata.name || storyIP.name || 'Untitled IP Asset'
@@ -76,6 +77,7 @@ function transformStoryIPToAsset(storyIP: any): IPAsset {
     id: ipId,
     title: name,
     description: description,
+    ownerAddress: owner,
     type: determineAssetType(metadata.contentType || metadata.type || storyIP.assetType || 'image'),
     collection: validCollection,
     creator: {

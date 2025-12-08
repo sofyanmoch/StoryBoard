@@ -15,6 +15,7 @@ export interface IPAsset {
     address: string
     avatar?: string
   }
+  ownerAddress: string;
   preview: {
     url: string
     thumbnailUrl: ThumbnailUrl

@@ -77,6 +77,7 @@ export function SwipeStack({ ipAssets }: SwipeStackProps) {
     <div className="relative w-full h-full">
       <AnimatePresence mode="popLayout">
         {visibleCards.map((ipAsset, index) => {
+          console.log(ipAsset.title, 'rendering card at index')
           const isTop = index === 0
           const offset = index * 8
           const scale = 1 - index * 0.05
