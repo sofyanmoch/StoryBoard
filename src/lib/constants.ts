@@ -44,7 +44,7 @@ export const COLLECTIONS: { value: Collection | 'all'; label: string }[] = [
   { value: 'all', label: 'All Collections' },
   { value: 'Color Cats', label: 'Color Cats' },
   { value: 'Sigma Music', label: 'Sigma Music' },
-  { value: 'PizzaDAO', label: 'PizzaDAO' },
+  { value: 'PizzadDAO', label: 'PizzadDAO' },
   { value: 'WTF Freg', label: 'WTF Freg' },
 ]
 

@@ -18,11 +18,8 @@ export default function LicensesPage() {
   const { licenses } = useLicenseStore()
   const { openIPDetailModal } = useUIStore()
 
-  console.log(licenses, 'licenses')
-
   const handleDownload = (license: any) => {
-    // In production, this would download the actual licensed asset
-    window.open(license.ipAsset.preview.url, '_blank')
+    window.open(license.ipAsset.preview.url.cachedUrl, '_blank')
   }
 
   return (

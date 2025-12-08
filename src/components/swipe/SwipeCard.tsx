@@ -51,8 +51,6 @@ export function SwipeCard({
   const minPrice = Math.min(...ipAsset.licenses.map((l) => Number(l.price)))
   const isFree = minPrice === 0
 
-  console.log(ipAsset, 'ipAsset in SwipeCard')
-
   return (
     <motion.div
       ref={cardRef}
@@ -112,7 +110,9 @@ export function SwipeCard({
             <Badge variant={isFree ? 'success' : 'primary'}>
               {formatPrice(minPrice.toString())}
             </Badge>
-            <Badge variant="default">{ipAsset.collection}</Badge>
+            {ipAsset.collection && (
+              <Badge variant="accent">{ipAsset.collection}</Badge>
+            )}
           </div>
           <Badge variant="accent">{ipAsset.type}</Badge>
         </div>

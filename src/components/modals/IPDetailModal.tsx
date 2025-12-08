@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/Badge'
-import { Heart, Share2, ExternalLink, Music } from 'lucide-react'
+import { Heart, Share2, ExternalLink, Music, Shuffle } from 'lucide-react'
 import Image from 'next/image'
 import { useUIStore } from '@/store/useUIStore'
 import { useIPStore } from '@/store/useIPStore'
@@ -14,7 +14,7 @@ import { LICENSE_TYPES } from '@/lib/constants'
 import { IPImage } from '../IPImage'
 
 export function IPDetailModal() {
-  const { isIPDetailModalOpen, selectedIP, closeIPDetailModal, openLicenseModal } = useUIStore()
+  const { isIPDetailModalOpen, selectedIP, closeIPDetailModal, openLicenseModal, openRemixModal } = useUIStore()
   const { likeIP, unlikeIP, isLiked } = useIPStore()
 
   if (!selectedIP) return null
@@ -99,7 +99,9 @@ export function IPDetailModal() {
                   <Badge variant={isFree ? 'success' : 'primary'}>
                     {formatPrice(minPrice.toString())}
                   </Badge>
-                  <Badge variant="default">{selectedIP.collection}</Badge>
+                  {selectedIP.collection && (
+                    <Badge variant="default">{selectedIP.collection}</Badge>
+                  )}
                   <Badge variant="accent">{selectedIP.type}</Badge>
                 </div>
               </div>
@@ -205,6 +207,24 @@ export function IPDetailModal() {
                   </button>
                 )
               })}
+            </div>
+
+            {/* Remix Button */}
+            <div className="mt-4">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  closeIPDetailModal()
+                  openRemixModal(selectedIP)
+                }}
+              >
+                <Shuffle size={18} className="mr-2" />
+                Remix This IP
+              </Button>
+              <p className="text-white/40 text-xs text-center mt-2">
+                Create a derivative work based on this IP asset
+              </p>
             </div>
           </div>
         </div>

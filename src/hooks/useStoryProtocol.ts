@@ -1,223 +1,201 @@
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
-import { useMemo } from 'react'
-import { StoryClient, StoryConfig } from '@story-protocol/core-sdk'
-import { Address, http, createPublicClient } from 'viem'
+import { useMemo, useCallback } from 'react'
+import { StoryClient, StoryConfig, aeneid } from '@story-protocol/core-sdk'
+import { Address, http, custom } from 'viem'
 import { storyAeneidTestnet } from '@/lib/wagmi'
+
+// Story Aeneid configuration
+const STORY_AENEID_CONFIG = {
+  rpcProviderUrl: 'https://aeneid.storyrpc.io',
+  chainId: 'aeneid' as const,
+  chain: aeneid,
+}
 
 // Hook for Story Protocol client
 export function useStoryProtocol() {
-  const { address, isConnected, chain } = useAccount()
-  const { data: walletClient } = useWalletClient({ chainId: storyAeneidTestnet.id })
+  const { address, isConnected, chain, connector } = useAccount()
+  const { data: walletClient, isLoading: isWalletLoading } = useWalletClient({ 
+    chainId: storyAeneidTestnet.id 
+  })
   const { switchChainAsync } = useSwitchChain()
 
   const client = useMemo(() => {
-    if (!walletClient || !isConnected || !address) return null
+    if (!walletClient || !isConnected || !address) {
+      console.log('Story Client - Missing requirements:', { 
+        hasWalletClient: !!walletClient, 
+        isConnected, 
+        address,
+        isWalletLoading 
+      })
+      return null
+    }
 
     try {
-      // Ensure wallet client has an account
+      console.log('=== Initializing Story Protocol Client ===')
+      console.log('Wallet Address:', address)
+      // console.log('Chain ID:', walletClient.chain?.id)
+
       if (!walletClient.account) {
-        console.error('Wallet client has no account attached')
+        console.error('WalletClient has no account')
         return null
       }
 
-      console.log('Initializing Story Protocol client')
-      console.log('- Account:', walletClient.account.address)
-
-      // Initialize Story Protocol client with proper account configuration
-      const storyClient = StoryClient.newClient({
+      // Create StoryClient with proper configuration
+      const storyConfig: StoryConfig = {
         account: walletClient.account,
-        transport: http('https://aeneid.storyrpc.io'),
-        chainId: 'aeneid' as any,
-      })
+        transport: custom({
+          async request({ method, params }) {
+            return await walletClient.request({ method, params } as any)
+          }
+        }),
+        chainId: 'aeneid',
+      }
 
+      const storyClient = StoryClient.newClient(storyConfig)
+      
+      console.log('✅ Story Protocol client initialized successfully')
       return storyClient
+
     } catch (error) {
-      console.error('Failed to initialize Story Protocol client:', error)
+      console.error('❌ Failed to initialize Story Protocol client:', error)
       return null
     }
-  }, [walletClient, isConnected, address])
+  }, [walletClient, isConnected, address, isWalletLoading])
+
+  const ensureCorrectChain = useCallback(async () => {
+    if (chain?.id !== storyAeneidTestnet.id) {
+      console.log('Switching to Story Aeneid Testnet...')
+      if (switchChainAsync) {
+        await switchChainAsync({ chainId: storyAeneidTestnet.id })
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        return true
+      }
+      throw new Error(`Please switch to Story Aeneid Testnet (Chain ID: ${storyAeneidTestnet.id})`)
+    }
+    return true
+  }, [chain?.id, switchChainAsync])
 
   return {
     client,
     isConnected,
+    isReady: !!client && isConnected && !!address,
+    isLoading: isWalletLoading,
     address,
     walletClient,
     chain,
-    switchChain: switchChainAsync
+    switchChain: switchChainAsync,
+    ensureCorrectChain,
   }
 }
 
 // Hook for licensing an IP asset
-// export function useLicenseIP() {
-//   const { client, isConnected, address } = useStoryProtocol()
-
-//   const license = async (
-//     ipId: Address,
-//     licenseTermsId: string | bigint,
-//     amount: number = 1
-//   ): Promise<{ txHash: string; licenseId: string }> => {
-//     if (!client || !isConnected || !address) {
-//       throw new Error('Wallet not connected')
-//     }
-
-//     try {
-//       console.log('Minting license for IP:', ipId, 'with terms:', licenseTermsId)
-
-//       // Try to attach license terms first (may already be attached)
-//       try {
-//         const attachResponse = await client.license.attachLicenseTerms({
-//           ipId: ipId,
-//           licenseTermsId: BigInt(licenseTermsId),
-//         })
-//         console.log('License terms attached:', attachResponse.txHash)
-//       } catch (attachError: any) {
-//         // If already attached, continue
-//         if (!attachError.message?.includes('already attached')) {
-//           console.warn('Failed to attach license terms:', attachError.message)
-//         }
-//       }
-
-//       // Mint license tokens
-//       const mintResponse = await client.license.mintLicenseTokens({
-//         licenseTermsId: BigInt(licenseTermsId),
-//         licensorIpId: ipId,
-//         receiver: address,
-//         amount: amount,
-//       })
-
-//       console.log('License minted:', mintResponse)
-
-//       return {
-//         txHash: mintResponse.txHash || '',
-//         licenseId: mintResponse.licenseTokenIds?.[0]?.toString() || `license-${Date.now()}`
-//       }
-//     } catch (error: any) {
-//       console.error('Error minting license:', error)
-//       throw new Error(error.message || 'Failed to mint license')
-//     }
-//   }
-
-//   return { license, isConnected }
-// }
-
 export function useLicenseIP() {
-  const { client, isConnected, address, walletClient, chain, switchChain } = useStoryProtocol()
+  const { 
+    client, 
+    isConnected, 
+    isReady,
+    address, 
+    walletClient, 
+    chain, 
+    ensureCorrectChain 
+  } = useStoryProtocol()
 
-  const license = async (
+  const license = useCallback(async (
     ipId: Address,
     licenseTermsId: string | bigint,
     amount: number = 1
   ): Promise<{ txHash: string; licenseId: string }> => {
-    if (!client || !isConnected || !address) {
-      throw new Error('Wallet not connected. Please connect your wallet first.')
+    
+    if (!isReady || !client) {
+      throw new Error('Story Protocol client not ready. Please ensure your wallet is connected.')
+    }
+    
+    if (!address) {
+      throw new Error('Wallet address not available.')
     }
 
-    if (!walletClient) {
-      throw new Error('Wallet client not available. Please reconnect your wallet.')
+    if (!walletClient?.account) {
+      throw new Error('Wallet account not available. Please reconnect your wallet.')
     }
 
-    if (!walletClient.account) {
-      throw new Error('Wallet account not found. Please reconnect your wallet.')
+    console.log('=== LICENSE MINTING PROCESS ===')
+    console.log('IP ID:', ipId)
+    console.log('License Terms ID:', licenseTermsId.toString())
+    console.log('Amount:', amount)
+    console.log('Receiver:', address)
+
+    if (!ipId?.startsWith('0x') || ipId.length !== 42) {
+      throw new Error(`Invalid IP ID format: ${ipId}`)
+    }
+
+    const termsId = BigInt(licenseTermsId)
+    if (termsId < BigInt(1)) {
+      throw new Error(`Invalid license terms ID: ${licenseTermsId}`)
     }
 
     try {
-      console.log('=== LICENSE PROCESS STARTED ===')
-      console.log('IP ID:', ipId)
-      console.log('License Terms ID:', licenseTermsId)
-      console.log('Amount:', amount)
-      console.log('Receiver:', address)
-      console.log('Wallet Account:', walletClient.account.address)
-      console.log('Current Chain:', chain?.id)
-      console.log('Required Chain:', storyAeneidTestnet.id)
+      await ensureCorrectChain()
 
-      // Ensure we're on the correct chain
-      if (chain?.id !== storyAeneidTestnet.id) {
-        console.log('Wrong chain detected, switching to Story Aeneid Testnet...')
-        if (switchChain) {
-          try {
-            await switchChain({ chainId: storyAeneidTestnet.id })
-            console.log('✅ Successfully switched to Story Aeneid Testnet')
-            // Wait a moment for the chain switch to complete
-            await new Promise(resolve => setTimeout(resolve, 1000))
-          } catch (switchError: any) {
-            throw new Error(`Please switch to Story Aeneid Testnet (Chain ID: ${storyAeneidTestnet.id}) in your wallet.`)
-          }
-        } else {
-          throw new Error(`Please switch to Story Aeneid Testnet (Chain ID: ${storyAeneidTestnet.id}) in your wallet.`)
-        }
-      }
+      // Step 1: Try to attach license terms
+      console.log('Step 1: Checking/Attaching license terms...')
 
-      // Validate IP ID format
-      if (!ipId || !ipId.startsWith('0x') || ipId.length !== 42) {
-        throw new Error(`Invalid IP ID format: ${ipId}. Must be a valid Ethereum address.`)
-      }
-
-      // Validate license terms ID
-      const termsId = BigInt(licenseTermsId)
-      if (termsId < BigInt(1)) {
-        throw new Error(`Invalid license terms ID: ${licenseTermsId}`)
-      }
-
-      // Step 1: Try to attach license terms first
-      let attachSuccess = false
       try {
-        console.log('Attempting to attach license terms...')
-
         const attachResponse = await client.license.attachLicenseTerms({
-          ipId: ipId as Address,
+          ipId: ipId,
           licenseTermsId: termsId,
         })
-
-        console.log('✅ License terms attached successfully')
-        console.log('Attach TX Hash:', attachResponse.txHash)
-        attachSuccess = true
-
-        // Wait for blockchain confirmation
-        if (attachResponse.txHash) {
-          await new Promise(resolve => setTimeout(resolve, 3000))
-        }
-
-      } catch (attachError: any) {
-        console.log('Attach error:', attachError.message)
-
-        // Check if already attached (this is OK)
-        const errorMsg = attachError.message?.toLowerCase() || ''
-        if (
-          errorMsg.includes('already attached') ||
-          errorMsg.includes('0xb3e96921') ||
-          errorMsg.includes('alreadyattached')
-        ) {
-          console.log('ℹ️ License terms already attached, proceeding...')
-          attachSuccess = true
+        
+        if (attachResponse.success) {
+          console.log('✅ License terms attached successfully')
+          console.log('TX Hash:', attachResponse.txHash)
+          // Wait for blockchain confirmation
+          await new Promise(resolve => setTimeout(resolve, 5000))
         } else {
-          console.error('❌ Failed to attach license terms:', attachError)
-          throw new Error(`Failed to attach license terms: ${attachError.message}`)
+          console.log('ℹ️ License terms already attached to this IP')
+        }
+      } catch (attachError: any) {
+        const errorMsg = (attachError.message || '').toLowerCase()
+        const errorStr = JSON.stringify(attachError).toLowerCase()
+        
+        const isAlreadyAttached = 
+          errorMsg.includes('already attached') ||
+          errorMsg.includes('alreadyattached') ||
+          errorMsg.includes('0xb3e96921') ||
+          errorStr.includes('0xb3e96921')
+        
+        const isPermissionDenied = 
+          errorMsg.includes('permission') ||
+          errorMsg.includes('accesscontroller')
+
+        if (isAlreadyAttached) {
+          console.log('ℹ️ License terms already attached, proceeding...')
+        } else if (isPermissionDenied) {
+          console.log('ℹ️ Permission denied on attach - terms may be attached by owner')
+        } else {
+          console.warn('Attach warning:', attachError.message)
         }
       }
 
-      // Only proceed if attach was successful
-      if (!attachSuccess) {
-        throw new Error('Failed to attach license terms. Cannot mint license.')
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Step 2: Mint license tokens
-      console.log('Attempting to mint license tokens...')
-
-      // console.log("=== MINT PARAMETERS ===", ipId, termsId, amount, address)
+      // Step 2: Mint License Tokens
+      console.log('Step 2: Minting License Tokens...')
 
       const mintResponse = await client.license.mintLicenseTokens({
-        licensorIpId: ipId as Address,
-        licenseTermsId: "1" as any, // Use default license template
-        amount: 1,
+        licensorIpId: ipId,
+        licenseTermsId: termsId,
         receiver: address as Address,
+        amount: amount,
+        maxMintingFee: BigInt(0),
+        maxRevenueShare: 100,
       })
 
-      console.log('✅ License minted successfully')
-      console.log('Mint TX Hash:', mintResponse.txHash)
+      console.log('✅ License tokens minted successfully!')
+      console.log('TX Hash:', mintResponse.txHash)
       console.log('License Token IDs:', mintResponse.licenseTokenIds)
 
       if (!mintResponse.txHash) {
-        throw new Error('No transaction hash returned from mint')
+        throw new Error('No transaction hash returned')
       }
 
       return {
@@ -226,40 +204,114 @@ export function useLicenseIP() {
       }
 
     } catch (error: any) {
-      console.error('=== LICENSE PROCESS FAILED ===')
+      console.error('=== LICENSE MINTING FAILED ===')
       console.error('Error:', error)
-      console.error('Error message:', error.message)
-      console.error('Error details:', error.cause || error.details)
-
-      // Provide more specific error messages
-      if (error.message?.includes('not attached')) {
-        throw new Error('License terms are not attached to this IP. Please try again.')
+      
+      const errorMsg = (error.message || '').toLowerCase()
+      
+      if (errorMsg.includes('not attached')) {
+        throw new Error(
+          `License terms ID ${licenseTermsId} is not attached to this IP Asset. ` +
+          `The IP owner must attach license terms before others can mint licenses.`
+        )
       }
-
-      if (error.message?.includes('invalid') || error.message?.includes('Invalid')) {
-        throw new Error('Missing or invalid parameters.\nDouble check you have provided the correct parameters.')
+      
+      if (errorMsg.includes('permission')) {
+        throw new Error('Permission denied. You may not have permission to mint licenses for this IP.')
       }
-
-      if (error.message?.includes('insufficient')) {
-        throw new Error('Insufficient balance to mint license. Please check your wallet.')
+      
+      if (errorMsg.includes('insufficient') || errorMsg.includes('balance')) {
+        throw new Error('Insufficient balance. Please get testnet tokens from the faucet.')
       }
-
-      if (error.message?.includes('user rejected') || error.message?.includes('User rejected')) {
+      
+      if (errorMsg.includes('rejected') || errorMsg.includes('user denied')) {
         throw new Error('Transaction rejected by user.')
       }
 
-      throw new Error(error.message || 'Failed to mint license tokens: Missing or invalid parameters.\nDouble check you have provided the correct parameters.')
+      throw new Error(error.message || 'Failed to mint license tokens.')
     }
-  }
+  }, [client, isReady, address, walletClient, chain, ensureCorrectChain])
 
-  return { license, isConnected }
+  return { license, isConnected, isReady, client }
+}
+
+// Hook for attaching license terms
+export function useAttachLicenseTerms() {
+  const { client, isConnected, isReady, ensureCorrectChain } = useStoryProtocol()
+
+  const attachTerms = useCallback(async (
+    ipId: Address,
+    licenseTermsId: string | bigint
+  ): Promise<{ txHash: string; success: boolean }> => {
+    
+    if (!isReady || !client) {
+      throw new Error('Story Protocol client not ready.')
+    }
+
+    console.log('=== ATTACHING LICENSE TERMS ===')
+    console.log('IP ID:', ipId)
+    console.log('License Terms ID:', licenseTermsId.toString())
+
+    if (!ipId?.startsWith('0x') || ipId.length !== 42) {
+      throw new Error('Invalid IP ID format')
+    }
+
+    const termsId = BigInt(licenseTermsId)
+    if (termsId < BigInt(1)) {
+      throw new Error('Invalid license terms ID')
+    }
+
+    try {
+      await ensureCorrectChain()
+
+      const response = await client.license.attachLicenseTerms({
+        ipId: ipId,
+        licenseTermsId: termsId,
+      })
+
+      if (response.success) {
+        console.log('✅ License terms attached')
+        console.log('TX Hash:', response.txHash)
+        
+        // Wait for confirmation
+        if (response.txHash) {
+          await new Promise(resolve => setTimeout(resolve, 5000))
+        }
+        
+        return { txHash: response.txHash || '', success: true }
+      } else {
+        console.log('ℹ️ License terms already attached')
+        return { txHash: '', success: true }
+      }
+
+    } catch (error: any) {
+      const errorMsg = (error.message || '').toLowerCase()
+      
+      if (
+        errorMsg.includes('already') || 
+        errorMsg.includes('0xb3e96921') ||
+        errorMsg.includes('alreadyattached')
+      ) {
+        console.log('ℹ️ License terms already attached')
+        return { txHash: '', success: true }
+      }
+      
+      if (errorMsg.includes('permission')) {
+        throw new Error('You must be the IP owner to attach license terms.')
+      }
+      
+      throw new Error(error.message || 'Failed to attach license terms')
+    }
+  }, [client, isReady, ensureCorrectChain])
+
+  return { attachTerms, isConnected, isReady }
 }
 
 // Hook for registering IP
 export function useRegisterIP() {
-  const { client, isConnected, address } = useStoryProtocol()
+  const { client, isConnected, isReady, address, ensureCorrectChain } = useStoryProtocol()
 
-  const register = async (
+  const register = useCallback(async (
     nftContract: Address,
     tokenId: string | bigint,
     metadata?: {
@@ -268,203 +320,144 @@ export function useRegisterIP() {
       nftMetadataHash?: Address
     }
   ): Promise<{ ipId: string; txHash: string }> => {
-    if (!client || !isConnected || !address) {
-      throw new Error('Wallet not connected')
+    
+    if (!isReady || !client || !address) {
+      throw new Error('Story Protocol client not ready.')
     }
 
-    try {
-      console.log('Registering IP for NFT:', nftContract, tokenId)
+    console.log('=== REGISTERING IP ASSET ===')
+    console.log('NFT Contract:', nftContract)
+    console.log('Token ID:', tokenId.toString())
 
-      // Register the NFT as an IP Asset
+    try {
+      await ensureCorrectChain()
+
       const response = await client.ipAsset.register({
         nftContract: nftContract,
         tokenId: BigInt(tokenId),
         ...(metadata?.metadataURI && {
-          metadata: {
-            metadataURI: metadata.metadataURI,
-            metadataHash: metadata.metadataHash || '0x' as Address,
-            nftMetadataHash: metadata.nftMetadataHash || '0x' as Address,
+          ipMetadata: {
+            ipMetadataURI: metadata.metadataURI,
+            ipMetadataHash: metadata.metadataHash || ('0x' as Address),
+            nftMetadataHash: metadata.nftMetadataHash || ('0x' as Address),
           }
         })
       })
 
-      console.log('IP registered:', response)
-
+      console.log('✅ IP registered:', response.ipId)
+      
+      // Wait for confirmation
+      if (response.txHash) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+      }
+      
       return {
         ipId: response.ipId || '',
         txHash: response.txHash || ''
       }
     } catch (error: any) {
-      console.error('Error registering IP:', error)
+      console.error('❌ Register error:', error)
+      
+      if (error.message?.includes('already registered')) {
+        throw new Error('This NFT is already registered as an IP asset.')
+      }
+      
       throw new Error(error.message || 'Failed to register IP')
     }
-  }
+  }, [client, isReady, address, ensureCorrectChain])
 
-  return { register, isConnected }
+  return { register, isConnected, isReady }
 }
 
-// Hook for attaching license terms to an IP
-// export function useAttachLicenseTerms() {
-//   const { client, isConnected } = useStoryProtocol()
+// Hook for remix/derivative IP
+export function useRemixIP() {
+  const { client, isConnected, isReady, address, ensureCorrectChain } = useStoryProtocol()
 
-//   const attachTerms = async (
-//     ipId: Address,
-//     licenseTermsId: string | bigint
-//   ): Promise<{ txHash: string; success: boolean }> => {
-//     if (!client || !isConnected) {
-//       throw new Error('Wallet not connected')
-//     }
-
-//     try {
-//       console.log('Attaching license terms:', licenseTermsId, 'to IP:', ipId)
-
-//       const response = await client.license.attachLicenseTerms({
-//         ipId: ipId,
-//         licenseTermsId: BigInt(licenseTermsId),
-//       })
-
-//       console.log('License terms attached:', response)
-
-//       return {
-//         txHash: response.txHash || '',
-//         success: true
-//       }
-//     } catch (error: any) {
-//       console.error('Error attaching license terms:', error)
-
-//       // If already attached, consider it a success
-//       if (error.message?.includes('already attached')) {
-//         return {
-//           txHash: '',
-//           success: true
-//         }
-//       }
-
-//       throw new Error(error.message || 'Failed to attach license terms')
-//     }
-//   }
-
-//   return { attachTerms, isConnected }
-// }
-
-export function useAttachLicenseTerms() {
-  const { client, isConnected } = useStoryProtocol()
-
-  const attachTerms = async (
-    ipId: Address,
-    licenseTermsId: string | bigint
-  ): Promise<{ txHash: string; success: boolean }> => {
-    if (!client || !isConnected) {
-      throw new Error('Wallet not connected')
+  const remix = useCallback(async (
+    parentIpId: Address,
+    nftContract: Address,
+    tokenId: string | bigint,
+    licenseTermsId: string | bigint = '1',
+    metadataURI?: string
+  ): Promise<{ childIpId: string; txHash: string }> => {
+    
+    if (!isReady || !client || !address) {
+      throw new Error('Story Protocol client not ready.')
     }
 
-    try {
-      console.log('=== ATTACHING LICENSE TERMS ===')
-      console.log('IP ID:', ipId)
-      console.log('License Terms ID:', licenseTermsId)
+    console.log('=== CREATING DERIVATIVE IP ===')
+    console.log('Parent IP:', parentIpId)
+    console.log('NFT Contract:', nftContract)
+    console.log('Token ID:', tokenId.toString())
 
-      const response = await client.license.attachLicenseTerms({
-        ipId: ipId as Address,
-        licenseTermsId: BigInt(licenseTermsId),
+    try {
+      await ensureCorrectChain()
+
+      // Step 1: Register the NFT as IP
+      console.log('Step 1: Registering NFT as IP Asset...')
+      const registerResponse = await client.ipAsset.register({
+        nftContract: nftContract,
+        tokenId: BigInt(tokenId),
       })
 
-      console.log('✅ Attach Response:', response)
-      
-      // Wait for confirmation
-      if (response.txHash) {
-        console.log('Waiting for transaction confirmation...')
-        await new Promise(resolve => setTimeout(resolve, 5000))
+      if (!registerResponse.ipId) {
+        throw new Error('Failed to register derivative IP')
       }
+
+      const childIpId = registerResponse.ipId
+      console.log('✅ Child IP registered:', childIpId)
+
+      // Wait for registration to confirm
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      // Step 2: Link as derivative
+      console.log('Step 2: Linking to parent IP...')
+      const linkResponse = await client.ipAsset.registerDerivative({
+        childIpId: childIpId as Address,
+        parentIpIds: [parentIpId],
+        licenseTermsIds: [BigInt(licenseTermsId)],
+      })
+
+      console.log('✅ Derivative linked:', linkResponse.txHash)
 
       return {
-        txHash: response.txHash || '',
-        success: true
+        childIpId: childIpId,
+        txHash: linkResponse.txHash || registerResponse.txHash || ''
       }
     } catch (error: any) {
-      console.error('❌ Attach Error:', error)
+      console.error('❌ Remix error:', error)
       
-      // Check if already attached
-      const errorMsg = error.message?.toLowerCase() || ''
-      if (
-        errorMsg.includes('already attached') ||
-        errorMsg.includes('0xb3e96921') ||
-        errorMsg.includes('alreadyattached')
-      ) {
-        console.log('ℹ️ License terms already attached')
-        return {
-          txHash: '',
-          success: true
-        }
+      if (error.message?.includes('already registered')) {
+        throw new Error('This NFT is already registered as an IP.')
       }
-
-      throw error
+      
+      if (error.message?.includes('not owner')) {
+        throw new Error('You must own the NFT to create a derivative.')
+      }
+      
+      throw new Error(error.message || 'Failed to create derivative')
     }
-  }
+  }, [client, isReady, address, ensureCorrectChain])
 
-  return { attachTerms, isConnected }
+  return { remix, isConnected, isReady }
 }
 
-// Hook for fetching IP assets from Story Protocol
-export function useFetchIPAssets() {
-  const { client, isConnected } = useStoryProtocol()
-
-  const fetchIPAssets = async (_options?: {
-    limit?: number
-    offset?: number
-  }): Promise<any[]> => {
-    if (!client) {
-      console.warn('Story Protocol client not initialized')
-      return []
-    }
-
-    try {
-      console.log('Fetching IP assets from Story Protocol...')
-
-      // Note: Story Protocol SDK may not have a direct "list all IPs" method
-      // You would typically fetch IPs you own or specific IPs by ID
-      // For now, return empty array as placeholder
-
-      // Example of how you might fetch specific IPs:
-      // const ipAsset = await client.ipAsset.get(ipId)
-
-      return []
-    } catch (error: any) {
-      console.error('Error fetching IP assets:', error)
-      return []
-    }
-  }
-
-  return { fetchIPAssets, isConnected }
-}
-
-// Helper: Get default PIL terms IDs for common license types
-// These are standard license term IDs on Story Protocol
+// Default license terms IDs
 export const DEFAULT_LICENSE_TERMS = {
-  // Non-commercial Social Remixing (free, derivatives allowed)
   NON_COMMERCIAL_REMIX: '1',
-
-  // Commercial Use (paid, no derivatives)
   COMMERCIAL_USE: '2',
-
-  // Commercial Remix (paid, derivatives allowed with rev share)
   COMMERCIAL_REMIX: '3',
 } as const
 
-// Map our license types to Story Protocol license terms
 export function getLicenseTermsId(licenseType: 'personal' | 'commercial' | 'remix'): string {
   switch (licenseType) {
-    case 'personal':
-      return DEFAULT_LICENSE_TERMS.NON_COMMERCIAL_REMIX
-    case 'commercial':
-      return DEFAULT_LICENSE_TERMS.COMMERCIAL_USE
-    case 'remix':
-      return DEFAULT_LICENSE_TERMS.COMMERCIAL_REMIX
-    default:
-      return DEFAULT_LICENSE_TERMS.NON_COMMERCIAL_REMIX
+    case 'personal': return DEFAULT_LICENSE_TERMS.NON_COMMERCIAL_REMIX
+    case 'commercial': return DEFAULT_LICENSE_TERMS.COMMERCIAL_USE
+    case 'remix': return DEFAULT_LICENSE_TERMS.COMMERCIAL_REMIX
+    default: return DEFAULT_LICENSE_TERMS.NON_COMMERCIAL_REMIX
   }
 }
 
-// Helper: Format IP ID for display
 export function formatIPId(ipId: string): string {
   if (!ipId || ipId.length < 10) return ipId
   return `${ipId.slice(0, 6)}...${ipId.slice(-4)}`

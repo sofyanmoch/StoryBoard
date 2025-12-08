@@ -8,7 +8,7 @@ import { FilterModal } from '@/components/filters/FilterModal'
 import { SwipeStack } from '@/components/swipe/SwipeStack'
 import { IPDetailModal } from '@/components/modals/IPDetailModal'
 import { LicenseModal } from '@/components/modals/LicenseModal'
-import { filterIPAssets } from '@/data/mockIPAssets'
+import { RemixModal } from '@/components/modals/RemixModal'
 import { useFilterStore } from '@/store/useFilterStore'
 import { useIPStore } from '@/store/useIPStore'
 import { useRealIPAssets } from '@/hooks/useRealIPAssets'
@@ -26,6 +26,7 @@ export default function HomePage() {
 
   // Accumulate IP assets from all pages
   useEffect(() => {
+ 
     if (ipAssets.length > 0) {
       setAllIPAssets((prev) => {
         // Check if we already have these IPs to avoid duplicates
@@ -47,7 +48,7 @@ export default function HomePage() {
 
   // Filter assets based on current filters
   const filteredAssets = useMemo(() => {
-    return filterIPAssets(allIPAssets, filters)
+    return allIPAssets;
   }, [allIPAssets, filters])
 
   const filteredKey = useMemo(() => {
@@ -135,6 +136,7 @@ export default function HomePage() {
       {/* Modals */}
       <IPDetailModal />
       <LicenseModal />
+      <RemixModal />
       <FilterModal />
     </div>
   )

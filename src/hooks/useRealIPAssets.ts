@@ -2,9 +2,54 @@ import { useQuery } from '@tanstack/react-query'
 import { type IPAsset } from '@/types'
 import { parseEther } from 'viem'
 
+// Types for License Terms from API
+interface LicenseTermsFromAPI {
+  licenseTemplateId: string
+  licenseTermsId: string
+  templateName: string
+  templateMetadataUri: string
+  terms: {
+    uri: string
+    currency: string
+    expiration: string
+    transferable: boolean
+    commercialUse: boolean
+    royaltyPolicy: string
+    defaultMintingFee: string
+    commercialRevShare: number
+    derivativesAllowed: boolean
+    derivativesApproval: boolean
+    commercialRevCeiling: string
+    derivativeRevCeiling: string
+    commercialAttribution: boolean
+    commercializerChecker: string
+    derivativesReciprocal: boolean
+    derivativesAttribution: boolean
+    commercializerCheckerData: string
+  }
+  licensingConfig: {
+    isSet: boolean
+    disabled: boolean
+    hookData: string
+    mintingFee: number
+    licensingHook: string
+    commercialRevShare: number
+    expectGroupRewardPool: string
+    expectMinimumGroupRewardShare: number
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+// Currency address mapping
+const CURRENCY_MAP: Record<string, string> = {
+  '0x1514000000000000000000000000000000000000': 'WIP',
+  '0x0000000000000000000000000000000000000000': 'FREE',
+}
+
 // Story Protocol API configuration
-const STORY_API_URL = 'https://staging-api.storyprotocol.net/api/v4'
-const STORY_API_KEY = 'KOTbaGUSWQ6cUJWhiJYiOjPgB0kTRu1eCFFvQL0IWls'
+const STORY_API_URL = process.env.NEXT_PUBLIC_STORY_API_URL || 'https://staging-api.storyprotocol.net/api/v4'
+const STORY_API_KEY = process.env.NEXT_PUBLIC_STORY_API_KEY || ''
 
 // Transform Story Protocol IP data to our IPAsset format
 function transformStoryIPToAsset(storyIP: any): IPAsset {
@@ -23,9 +68,9 @@ function transformStoryIPToAsset(storyIP: any): IPAsset {
 
   // Determine collection from metadata or default
   const collection = (metadata.collection || storyIP.collection || 'Story Protocol') as any
-  const validCollection = ['Color Cats', 'Sigma Music', 'PizzaDAO', 'WTF Freg'].includes(collection)
+  const validCollection = ['Color Cats', 'Sigma Music', 'PizdzaDAO', 'WTF Freg'].includes(collection)
     ? collection
-    : 'PizzaDAO' // default to valid collection
+    : '' // default to valid collection
 
   return {
     id: ipId,
@@ -62,26 +107,142 @@ function determineAssetType(contentType: string): IPAsset['type'] {
   return 'image'
 }
 
-function transformLicenses(licenseTerms: any[]): IPAsset['licenses'] {
+// Transform licenses - preserves original API data + adds UI fields
+function transformLicenses(licenseTerms: LicenseTermsFromAPI[] | any[]): (LicenseTermsFromAPI & {
+  // UI-friendly fields
+  type: 'personal' | 'commercial' | 'remix'
+  price: string
+  priceFormatted: string
+  currency: string
+  currencyAddress: string
+  available: boolean
+  isTransferable: boolean
+  commercialRevSharePercent: number
+  derivativesAllowed: boolean
+  requiresAttribution: boolean
+})[] {
+  
+  // Return default if no license terms
   if (!licenseTerms || licenseTerms.length === 0) {
-    return [{ type: 'personal', price: '0', currency: 'IP', available: true }]
+    return [{
+      // Default API structure
+      licenseTemplateId: '',
+      licenseTermsId: '0',
+      templateName: 'default',
+      templateMetadataUri: '',
+      terms: {
+        uri: '',
+        currency: '0x0000000000000000000000000000000000000000',
+        expiration: '0',
+        transferable: true,
+        commercialUse: false,
+        royaltyPolicy: '',
+        defaultMintingFee: '0',
+        commercialRevShare: 0,
+        derivativesAllowed: false,
+        derivativesApproval: false,
+        commercialRevCeiling: '0',
+        derivativeRevCeiling: '0',
+        commercialAttribution: false,
+        commercializerChecker: '0x0000000000000000000000000000000000000000',
+        derivativesReciprocal: false,
+        derivativesAttribution: false,
+        commercializerCheckerData: '0x',
+      },
+      licensingConfig: {
+        isSet: false,
+        disabled: false,
+        hookData: '',
+        mintingFee: 0,
+        licensingHook: '',
+        commercialRevShare: 0,
+        expectGroupRewardPool: '',
+        expectMinimumGroupRewardShare: 0,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      
+      // UI fields
+      type: 'personal' as const,
+      price: '0',
+      priceFormatted: 'Free',
+      currency: 'IP',
+      currencyAddress: '0x0000000000000000000000000000000000000000',
+      available: true,
+      isTransferable: true,
+      commercialRevSharePercent: 0,
+      derivativesAllowed: false,
+      requiresAttribution: false,
+    }]
   }
 
-  return licenseTerms.map((term: any) => {
-    const termId = term.licenseTermsId || term.id
-    let type: 'personal' | 'commercial' | 'remix' = 'personal'
-
-    if (termId === '2' || termId === 2 || term.commercialUse) type = 'commercial'
-    else if (termId === '3' || termId === 3 || term.derivativesAllowed) type = 'remix'
-
+  return licenseTerms.map((term: LicenseTermsFromAPI) => {
+    const terms = term.terms || {}
+    const licensingConfig = term.licensingConfig || {}
+    
+    // Get currency from address
+    const currencyAddress = terms.currency || '0x0000000000000000000000000000000000000000'
+    const currency = CURRENCY_MAP[currencyAddress] || 'IP'
+    
+    // Get minting fee
+    const mintingFeeWei = terms.defaultMintingFee || licensingConfig.mintingFee?.toString() || '0'
+    const priceFormatted = formatMintingFee(mintingFeeWei)
+    
+    // Check availability
+    const isDisabled = licensingConfig.isSet && licensingConfig.disabled
+    const available = !isDisabled
+    
+    // Determine type
+    const type = determineLicenseType(terms as LicenseTermsFromAPI['terms'])
+    
     return {
+      // Preserve ALL original API data
+      ...term,
+      
+      // Add UI-friendly fields
       type,
-      price: term.mintingFee || term.price || '0',
-      currency: term.currency || 'IP',
-      available: term.available !== false,
+      price: mintingFeeWei,
+      priceFormatted: mintingFeeWei === '0' ? 'Free' : `${priceFormatted} ${currency}`,
+      currency,
+      currencyAddress,
+      available,
+      isTransferable: terms.transferable ?? true,
+      commercialRevSharePercent: terms.commercialRevShare || licensingConfig.commercialRevShare || 0,
+      derivativesAllowed: terms.derivativesAllowed ?? false,
+      requiresAttribution: terms.commercialAttribution || terms.derivativesAttribution || false,
     }
   })
 }
+
+// Format wei to human readable
+function formatMintingFee(weiValue: string): string {
+  if (!weiValue || weiValue === '0') return 'Free'
+  
+  try {
+    const wei = BigInt(weiValue)
+    const eth = Number(wei) / 1e18
+    
+    if (eth === 0) return 'Free'
+    if (eth < 0.001) return eth.toExponential(2)
+    if (eth < 1) return eth.toFixed(4)
+    if (eth < 1000) return eth.toFixed(2)
+    return eth.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  } catch {
+    return weiValue
+  }
+}
+
+// Determine license type based on terms
+function determineLicenseType(terms: LicenseTermsFromAPI['terms']): 'personal' | 'commercial' | 'remix' {
+  if (terms.derivativesAllowed) {
+    return 'remix'
+  }
+  if (terms.commercialUse) {
+    return 'commercial'
+  }
+  return 'personal'
+}
+
 
 function shortenAddress(address: string): string {
   if (!address || address.length < 10) return 'Unknown'
@@ -97,106 +258,6 @@ function generatePlaceholderImage(name: string = 'IP Asset'): string {
   const colors = ['FF6B35', '7C3AED', '10B981', 'F59E0B', 'EF4444', '8B5CF6']
   const randomColor = colors[Math.floor(Math.random() * colors.length)]
   return `https://via.placeholder.com/800x1000/${randomColor}/FFFFFF?text=${encodeURIComponent(name)}`
-}
-
-// Sample IP assets from Story Protocol ecosystem
-function getSampleIPAssets(): IPAsset[] {
-  return [
-    {
-      id: 'story-ip-001',
-      title: 'Digital Art Collection #1',
-      description: 'A unique digital artwork registered on Story Protocol. This piece represents the future of IP ownership and licensing on-chain.',
-      type: 'image',
-      collection: 'Color Cats',
-      creator: {
-        name: 'StoryArtist',
-        address: '0x1234567890123456789012345678901234567890',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=StoryArtist',
-      },
-      preview: {
-        url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=1000&fit=crop',
-        thumbnailUrl: {
-            cachedUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop',
-            contentType: 'image/jpeg',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop'
-        }
-      },
-      licenses: [
-        { type: 'personal', price: '0', currency: 'IP', available: true },
-        { type: 'commercial', price: parseEther('0.05').toString(), currency: 'IP', available: true },
-      ],
-      ipId: '0xabc1234567890abcdef1234567890abcdef12345',
-      metadata: {
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-        views: 450,
-        likes: 34,
-        tags: ['digital-art', 'nft', 'story-protocol'],
-      },
-    },
-    {
-      id: 'story-ip-002',
-      title: 'Licensed Music Track',
-      description: 'Original music composition available for licensing through Story Protocol. Perfect for content creators and commercial use.',
-      type: 'music',
-      collection: 'Sigma Music',
-      creator: {
-        name: 'MusicCreator',
-        address: '0x2345678901234567890123456789012345678901',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MusicCreator',
-      },
-      preview: {
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        thumbnailUrl: {
-            cachedUrl: 'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?w=400&h=500&fit=crop',
-            contentType: 'image/jpeg',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?w=400&h=500&fit=crop'
-        }
-      },
-      licenses: [
-        { type: 'personal', price: parseEther('0.01').toString(), currency: 'IP', available: true },
-        { type: 'commercial', price: parseEther('0.1').toString(), currency: 'IP', available: true },
-        { type: 'remix', price: parseEther('0.05').toString(), currency: 'IP', available: true },
-      ],
-      ipId: '0xdef2345678901234567890abcdef1234567890ab',
-      metadata: {
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        views: 820,
-        likes: 67,
-        tags: ['music', 'royalty-free', 'licensing'],
-      },
-    },
-    {
-      id: 'story-ip-003',
-      title: 'Programmable IP NFT',
-      description: 'An innovative IP asset demonstrating the power of Story Protocol. Includes full commercial rights and remix capabilities with revenue sharing.',
-      type: 'image',
-      collection: 'PizzaDAO',
-      creator: {
-        name: 'IPInnovator',
-        address: '0x3456789012345678901234567890123456789012',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=IPInnovator',
-      },
-      preview: {
-        url: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=800&h=1000&fit=crop',
-        thumbnailUrl: {
-            cachedUrl: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=500&fit=crop',
-            contentType: 'image/jpeg',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=500&fit=crop'
-        }
-      },
-      licenses: [
-        { type: 'commercial', price: parseEther('0.15').toString(), currency: 'IP', available: true },
-        { type: 'remix', price: parseEther('0.08').toString(), currency: 'IP', available: true },
-      ],
-      ipId: '0x456789012345678901234567890abcdef1234567',
-      metadata: {
-        createdAt: new Date(Date.now() - 14400000).toISOString(),
-        views: 1250,
-        likes: 98,
-        tags: ['programmable-ip', 'nft', 'licensing'],
-      },
-    },
-  ]
 }
 
 // Fetch IP assets from Story Protocol with pagination
@@ -222,23 +283,11 @@ async function fetchIPAssetsFromStory(page: number = 0, limit: number = 50): Pro
           limit: limit,
           offset: offset,
         },
-        // where field is optional - omit to get all assets
-        // where: {
-        //   ipIds: [],
-        //   ownerAddress: "",
-        //   tokenContract: ""
-        // }
       }),
     })
 
     if (!response.ok) {
       console.warn(`Story Protocol API error: ${response.status} ${response.statusText}`)
-
-      // Only use sample data for the first page
-      if (page === 0) {
-        console.log('Using sample data as fallback for page 0')
-        return getSampleIPAssets()
-      }
 
       console.log('No more assets available')
       return []
@@ -257,20 +306,9 @@ async function fetchIPAssetsFromStory(page: number = 0, limit: number = 50): Pro
 
     console.warn(`No IP assets found in response for page ${page}`)
 
-    // Only use sample data for the first page
-    if (page === 0) {
-      return getSampleIPAssets()
-    }
-
     return []
   } catch (error) {
     console.error('Error fetching IP assets from Story Protocol:', error)
-
-    // Only use sample data for the first page
-    if (page === 0) {
-      console.log('Falling back to sample Story Protocol data')
-      return getSampleIPAssets()
-    }
 
     return []
   }

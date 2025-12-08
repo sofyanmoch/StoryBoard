@@ -10,6 +10,9 @@ interface UIStore {
   licensingIP: IPAsset | null
   selectedLicenseType: LicenseType | null
 
+  isRemixModalOpen: boolean
+  remixingIP: IPAsset | null
+
   isFilterModalOpen: boolean
 
   // Actions
@@ -19,6 +22,9 @@ interface UIStore {
   openLicenseModal: (ip: IPAsset, licenseType?: LicenseType) => void
   closeLicenseModal: () => void
   setSelectedLicenseType: (type: LicenseType) => void
+
+  openRemixModal: (ip: IPAsset) => void
+  closeRemixModal: () => void
 
   toggleFilterModal: () => void
   closeFilterModal: () => void
@@ -31,6 +37,9 @@ export const useUIStore = create<UIStore>((set) => ({
   isLicenseModalOpen: false,
   licensingIP: null,
   selectedLicenseType: null,
+
+  isRemixModalOpen: false,
+  remixingIP: null,
 
   isFilterModalOpen: false,
 
@@ -58,6 +67,16 @@ export const useUIStore = create<UIStore>((set) => ({
 
   setSelectedLicenseType: (type) => set({
     selectedLicenseType: type
+  }),
+
+  openRemixModal: (ip) => set({
+    isRemixModalOpen: true,
+    remixingIP: ip
+  }),
+
+  closeRemixModal: () => set({
+    isRemixModalOpen: false,
+    remixingIP: null
   }),
 
   toggleFilterModal: () => set((state) => ({

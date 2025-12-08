@@ -23,8 +23,6 @@ export default function LikesPage() {
   const { openIPDetailModal, openLicenseModal } = useUIStore()
   const { hasLicense } = useLicenseStore()
 
-  console.log(likedIPs, 'likedIPs')
-
   const handleUnlike = (ipId: string, title: string) => {
     unlikeIP(ipId)
     toast('Removed from likes', { description: `${title} was removed` })
