@@ -13,6 +13,7 @@ import { useLicenseStore } from '@/store/useLicenseStore'
 import { useUIStore } from '@/store/useUIStore'
 import { formatPrice, formatDate, getExplorerUrl } from '@/lib/utils'
 import { LICENSE_TYPES } from '@/lib/constants'
+import { IPImage } from '@/components/IPImage'
 
 export default function LicensesPage() {
   const { licenses } = useLicenseStore()
@@ -50,8 +51,8 @@ export default function LicensesPage() {
                           onClick={() => openIPDetailModal(license.ipAsset)}
                         >
                           {license.ipAsset.type === 'image' && (
-                            <Image
-                              src={license.ipAsset.preview.thumbnailUrl.thumbnailUrl || license.ipAsset.preview.url}
+                            <IPImage
+                              src={license.ipAsset.preview.thumbnailUrl.cachedUrl || ''}
                               alt={license.ipAsset.title}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"
