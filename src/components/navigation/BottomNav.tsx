@@ -2,13 +2,14 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Heart, FileText, Wallet } from 'lucide-react'
+import { Home, Heart, FileText, Wallet, Coins } from 'lucide-react'
 import { ConnectKitButton } from 'connectkit'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/', icon: Home, label: 'Discover' },
   { href: '/likes', icon: Heart, label: 'Likes' },
+  { href: '/royalty', icon: Coins, label: 'Royalty' },
   { href: '/licenses', icon: FileText, label: 'Licenses' },
 ]
 

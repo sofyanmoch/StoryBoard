@@ -13,6 +13,8 @@ interface UIStore {
   isRemixModalOpen: boolean
   remixingIP: IPAsset | null
 
+  isSharesModalOpen: boolean
+
   isFilterModalOpen: boolean
 
   // Actions
@@ -25,6 +27,9 @@ interface UIStore {
 
   openRemixModal: (ip: IPAsset) => void
   closeRemixModal: () => void
+
+  openSharesModal: (ip: IPAsset) => void
+  closeSharesModal: () => void
 
   toggleFilterModal: () => void
   closeFilterModal: () => void
@@ -40,6 +45,8 @@ export const useUIStore = create<UIStore>((set) => ({
 
   isRemixModalOpen: false,
   remixingIP: null,
+
+  isSharesModalOpen: false,
 
   isFilterModalOpen: false,
 
@@ -77,6 +84,15 @@ export const useUIStore = create<UIStore>((set) => ({
   closeRemixModal: () => set({
     isRemixModalOpen: false,
     remixingIP: null
+  }),
+
+  openSharesModal: (ip) => set({
+    isSharesModalOpen: true,
+    selectedIP: ip
+  }),
+
+  closeSharesModal: () => set({
+    isSharesModalOpen: false
   }),
 
   toggleFilterModal: () => set((state) => ({

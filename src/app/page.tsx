@@ -9,8 +9,10 @@ import { SwipeStack } from '@/components/swipe/SwipeStack'
 import { IPDetailModal } from '@/components/modals/IPDetailModal'
 import { LicenseModal } from '@/components/modals/LicenseModal'
 import { RemixModal } from '@/components/modals/RemixModal'
+import { SharesModal } from '@/components/modals/SharesModal'
 import { useFilterStore } from '@/store/useFilterStore'
 import { useIPStore } from '@/store/useIPStore'
+import { useUIStore } from '@/store/useUIStore'
 import { useRealIPAssets } from '@/hooks/useRealIPAssets'
 import { IPCardSkeleton } from '@/components/ui/Skeleton'
 import { type IPAsset } from '@/types'
@@ -18,6 +20,7 @@ import { type IPAsset } from '@/types'
 export default function HomePage() {
   const { filters } = useFilterStore()
   const { setCurrentStack, currentStack } = useIPStore()
+  const { selectedIP, isSharesModalOpen, closeSharesModal } = useUIStore()
   const [currentPage, setCurrentPage] = useState(0)
   const [allIPAssets, setAllIPAssets] = useState<IPAsset[]>([])
   const [hasMore, setHasMore] = useState(true)
@@ -137,6 +140,11 @@ export default function HomePage() {
       <IPDetailModal />
       <LicenseModal />
       <RemixModal />
+      <SharesModal
+        isOpen={isSharesModalOpen}
+        onClose={closeSharesModal}
+        ipAsset={selectedIP}
+      />
       <FilterModal />
     </div>
   )

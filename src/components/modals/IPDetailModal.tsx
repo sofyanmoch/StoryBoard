@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/Badge'
-import { Heart, Share2, ExternalLink, Music, Shuffle } from 'lucide-react'
+import { Heart, Share2, ExternalLink, Music, Shuffle, Coins } from 'lucide-react'
 import Image from 'next/image'
 import { useUIStore } from '@/store/useUIStore'
 import { useIPStore } from '@/store/useIPStore'
@@ -14,7 +14,7 @@ import { LICENSE_TYPES } from '@/lib/constants'
 import { IPImage } from '../IPImage'
 
 export function IPDetailModal() {
-  const { isIPDetailModalOpen, selectedIP, closeIPDetailModal, openLicenseModal, openRemixModal } = useUIStore()
+  const { isIPDetailModalOpen, selectedIP, closeIPDetailModal, openLicenseModal, openRemixModal, openSharesModal } = useUIStore()
   const { likeIP, unlikeIP, isLiked } = useIPStore()
 
   if (!selectedIP) return null
@@ -209,8 +209,23 @@ export function IPDetailModal() {
               })}
             </div>
 
-            {/* Remix Button */}
-            <div className="mt-4">
+            {/* Action Buttons */}
+            <div className="mt-4 space-y-3">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => {
+                  closeIPDetailModal()
+                  openSharesModal(selectedIP)
+                }}
+              >
+                <Coins size={18} className="mr-2" />
+                Get Royalty Shares
+              </Button>
+              <p className="text-white/40 text-xs text-center -mt-1">
+                Earn revenue from this IP&apos;s success
+              </p>
+
               <Button
                 variant="secondary"
                 className="w-full"
@@ -222,9 +237,6 @@ export function IPDetailModal() {
                 <Shuffle size={18} className="mr-2" />
                 Remix This IP
               </Button>
-              <p className="text-white/40 text-xs text-center mt-2">
-                Create a derivative work based on this IP asset
-              </p>
             </div>
           </div>
         </div>

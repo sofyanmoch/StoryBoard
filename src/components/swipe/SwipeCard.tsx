@@ -135,7 +135,7 @@ export function SwipeCard({
                 )}
               </div>
               <div>
-                <p className="text-white text-sm font-medium">{ipAsset.creator.name}</p>
+                <p className="text-white text-sm font-medium">{ipAsset.ownerAddress}</p>
                 <p className="text-white/60 text-xs">{formatDate(ipAsset.metadata.createdAt)}</p>
               </div>
             </div>
